@@ -45,41 +45,44 @@ def smooth_scroll_until_bottom(page):
 
 
 def scrape_linkedin_jobs():
-    max_pages = 2  # Set max number of pages to scrape
-    current_page = 1  # Start from page 1
-    global page
+    max_pages = 2
+    current_page = 1
 
     with sync_playwright() as p:
         browser = p.chromium.launch_persistent_context(
             user_data_dir=profile_path,
-            headless=False  # Keep it visible
+            headless=False
         )
         page = browser.pages[0] if browser.pages else browser.new_page()
-        page.goto("https://www.linkedin.com/")
-        # page.pause()  # Check if it's logged in
+
+        # Pass page & browser to login method instead of creating a new one
+        page, browser = login_to_linkedin(page, browser)
+
+        print("✅ Successfully logged in!")
+
         search_box = page.get_by_role("combobox", name="Search")
-        search_box.click()  # Click to focus
+        search_box.click()
         search_box.fill(job_title)
-        search_box.press("Enter")  # Press Enter to submit search
+        search_box.press("Enter")
         page.get_by_text("See all job results in", exact=False).nth(0).click()
-        page.wait_for_load_state("domcontentloaded")  # Wait for page to load
+        page.wait_for_load_state("domcontentloaded")
+
         jobs_data = []
 
         while current_page <= max_pages:
-            time.sleep(random.uniform(2, 5))  # Random sleep to avoid detection
-            smooth_scroll_until_bottom(page)  # Ensure all jobs are loaded
-            page.wait_for_selector("ul >> li[data-occludable-job-id]", timeout=10000)  # Wait up to 5 seconds
-            job_listings = page.locator("ul >> li[data-occludable-job-id]")  # Target list items that contain job posts
+            time.sleep(random.uniform(2, 5))
+            smooth_scroll_until_bottom(page)
+            page.wait_for_selector("ul >> li[data-occludable-job-id]", timeout=10000)
+
+            job_listings = page.locator("ul >> li[data-occludable-job-id]")
             print(f"Found {len(job_listings.all())} job listings")
             time.sleep(10)
-            # job_listings = page.locator("//ul/li[contains(@class, 'occludable-update')]")
-            # print(f"Found {len(job_listings.all())} job listings")
-            for job in job_listings.element_handles():  # Directly iterate elements (faster)
+
+            for job in job_listings.element_handles():
                 try:
                     title_element = job.query_selector("a.job-card-container__link")
                     title = title_element.inner_text().strip() if title_element else None
-                    job_link = "https://www.linkedin.com" + title_element.get_attribute(
-                        "href") if title_element else None
+                    job_link = f"https://www.linkedin.com{title_element.get_attribute('href')}" if title_element else None
 
                     company_element = job.query_selector("span.YGkphPWJLcZoKjqmMHJWIZxpuIGCXJaMct")
                     company = company_element.text_content().strip() if company_element else None
@@ -98,17 +101,16 @@ def scrape_linkedin_jobs():
 
                 except Exception as e:
                     print(f"Error: {e}")
-            # Check if "Next" button exists and is clickable
+
             next_button = page.locator("button.jobs-search-pagination__button--next")
             if next_button.count() == 0 or not next_button.is_visible():
                 print("No more pages to scrape. Stopping...")
-                break  # Exit loop if no "Next" button
+                break
 
             print("Navigating to next page...")
             next_button.click()
             current_page += 1
-            page.wait_for_load_state("domcontentloaded")  # Wait for page to load
-            # Click the "Show more jobs" button
+            page.wait_for_load_state("domcontentloaded")
 
     return jobs_data
 
