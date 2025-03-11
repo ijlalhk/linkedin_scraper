@@ -5,7 +5,7 @@ import time
 from login import login_to_linkedin
 
 profile_path = "C:/Users/Biome/AppData/Local/Google/Chrome/User Data/Default"  # Use the detected profile
-job_title = "data analyst"  # Job title to search for
+job_title = "Trainee"  # Job title to search for
 page = None
 
 
