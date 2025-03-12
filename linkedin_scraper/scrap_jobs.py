@@ -45,7 +45,7 @@ def smooth_scroll_until_bottom(page):
 
 
 def scrape_linkedin_jobs():
-    max_pages = 2
+    max_pages = 1
     current_page = 1
 
     with sync_playwright() as p:
@@ -84,11 +84,11 @@ def scrape_linkedin_jobs():
                     title = title_element.inner_text().strip() if title_element else None
                     job_link = f"https://www.linkedin.com{title_element.get_attribute('href')}" if title_element else None
 
-                    company_element = job.query_selector("span.YGkphPWJLcZoKjqmMHJWIZxpuIGCXJaMct")
-                    company = company_element.text_content().strip() if company_element else None
+                    company_element = job.query_selector("div.artdeco-entity-lockup__subtitle span")
+                    company = company_element.inner_text().strip() if company_element else None
 
-                    location_element = job.query_selector("li.zVOXfdhNOUpuINtMHxaECEfbEVlDkYhgavq")
-                    location = location_element.text_content().strip() if location_element else None
+                    location_element = job.query_selector("ul li")
+                    location = location_element.inner_text().strip() if location_element else None
 
                     current_job_data = {
                         "title": title,
